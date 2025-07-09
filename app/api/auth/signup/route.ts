@@ -1,18 +1,35 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/libs/prisma";
 import bcrypt from "bcryptjs";
+import { z } from "zod";
+
+const singUpSchema = z.object({
+  username: z.string().min(3, "username at least be 3 characters"),
+  password: z.string().min(6, "password at least be 6 characters"),
+});
 
 export async function POST(req: NextRequest) {
   try {
     const { username, password } = await req.json(); // delivers in part
 
-    console.log(username, password);
-    if (!username || !password) {
+    const parsed = singUpSchema.safeParse({ username, password });
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          message: " Invalid input ",
+          errors: parsed.error.format(),
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!username?.trim() || !password.trim()) {
       return NextResponse.json(
         {
           message: "please fill all inputs",
         },
-        { status: 200 }
+        { status: 400 }
       );
     }
 
@@ -51,14 +68,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(newUser);
-
     return NextResponse.json(
       { message: "Account created successfully. Welcome to our community!" },
       { status: 201 }
     );
   } catch (error) {
-    console.log("sign up error :", error);
+    if (error instanceof Error) {
+      console.log("sign up error :", error.message);
+    }
 
     return NextResponse.json(
       { message: "internal server error" },
