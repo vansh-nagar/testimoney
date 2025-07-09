@@ -4,8 +4,8 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 const singUpSchema = z.object({
-  username: z.string().min(3, "username at least be 3 characters"),
-  password: z.string().min(6, "password at least be 6 characters"),
+  username: z.string().trim().min(3, "username at least be 3 characters"),
+  password: z.string().trim().min(6, "password at least be 6 characters"),
 });
 
 export async function POST(req: NextRequest) {
@@ -19,15 +19,6 @@ export async function POST(req: NextRequest) {
         {
           message: " Invalid input ",
           errors: parsed.error.format(),
-        },
-        { status: 400 }
-      );
-    }
-
-    if (!username?.trim() || !password.trim()) {
-      return NextResponse.json(
-        {
-          message: "please fill all inputs",
         },
         { status: 400 }
       );
