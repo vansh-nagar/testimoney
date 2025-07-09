@@ -3,54 +3,66 @@ import { prisma } from "@/libs/prisma";
 import bcrypt from "bcryptjs";
 
 export async function POST(req: NextRequest) {
-  const { username, password } = await req.json(); // delivers in part
+  try {
+    const { username, password } = await req.json(); // delivers in part
 
-  console.log(username, password);
-  if (!username && !password) {
-    NextResponse.json(
-      {
-        message: "please fill all inputs",
+    console.log(username, password);
+    if (!username || !password) {
+      return NextResponse.json(
+        {
+          message: "please fill all inputs",
+        },
+        { status: 200 }
+      );
+    }
+
+    const searchedUser = await prisma.user.findUnique({
+      where: {
+        username,
       },
-      { status: 200 }
-    );
-  }
-
-  const searchedUser = await prisma.user.findUnique({
-    where: {
-      username,
-    },
-  });
-
-  if (searchedUser) {
-    return NextResponse.json(
-      {
-        message:
-          "This username is already registered. Please sign in or choose a different username.",
-      },
-      { status: 400 }
-    );
-  }
-
-  const salt = await bcrypt.genSalt(10);
-  const hashPass = await bcrypt.hash(password, salt);
-
-  const newUser = await prisma.user.create({
-    data: {
-      username,
-      password: hashPass,
-    },
-  });
-
-  if (!newUser) {
-    NextResponse.json({
-      message: "User creation failed. Please try again.",
     });
+
+    if (searchedUser) {
+      return NextResponse.json(
+        {
+          message:
+            "This username is already registered. Please sign in or choose a different username.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashPass = await bcrypt.hash(password, salt);
+
+    const newUser = await prisma.user.create({
+      data: {
+        username,
+        password: hashPass,
+      },
+    });
+
+    if (!newUser) {
+      return NextResponse.json(
+        {
+          message: "User creation failed. Please try again.",
+        },
+        { status: 500 }
+      );
+    }
+
+    console.log(newUser);
+
+    return NextResponse.json(
+      { message: "Account created successfully. Welcome to our community!" },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.log("sign up error :", error);
+
+    return NextResponse.json(
+      { message: "internal server error" },
+      { status: 500 }
+    );
   }
-
-  console.log(newUser);
-
-  return NextResponse.json(
-    { message: "Account created successfully. Welcome to our community!" },
-    { status: 201 }
-  );
 }
